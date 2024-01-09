@@ -3,6 +3,7 @@ from models.point import Point
 from models.lane import Lane
 from typing import List
 
+
 @dataclass
 class Road:
     id: str

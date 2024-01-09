@@ -1,6 +1,7 @@
 import json
 import os
 
+
 class Config:
     def __init__(self):
         self.cityflow_config_path = os.path.join("cityflow-config", "config.json")
