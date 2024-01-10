@@ -1,9 +1,12 @@
+from collections import defaultdict
 import cityflow
 from config import Config
 from models.roadnet import Roadnet
 from environment.cityflow_env import CityFlowEnv
 import numpy as np
-import random
+import matplotlib.pyplot as plt
+
+from q_learning.q_learner import QLearner
 
 if __name__ == "__main__":
     config = Config()
@@ -11,10 +14,17 @@ if __name__ == "__main__":
         roadnetJson = roadnetFile.read()
         roadnet = Roadnet.from_json(roadnetJson)
 
-    env = CityFlowEnv(roadnet, config)
-    for i in range(5000):
-        states_vect = env.get_states()
-        actions = np.zeros(env.intersections_num, dtype=np.int8)
-        for i, state_vect in enumerate(states_vect):
-            actions[i] = random.choice(env.get_possible_actions(i))
-        reward = env.step(actions)
+    learner = QLearner(
+        config=config, roadnet=roadnet, alpha=0.15, gamma=0.95, epsilon=0.1, bin_count=5
+    )
+    learner.learn(steps=500, progress=True)
+
+    avg_rewards = learner.avg_rewards
+
+    plt.plot(avg_rewards)
+    plt.title(f"best_reward={max(avg_rewards)}")
+
+    name = "q-learning2"
+    plt.savefig(f"plots/{name}.png")
+
+    plt.show()

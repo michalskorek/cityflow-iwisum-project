@@ -1,7 +1,7 @@
 {
 	"interval": 1.0,
 	"seed": 0,
-	"dir": "cityflow-config/samples/3x4/",
+	"dir": "cityflow-config/samples/1x1/",
 	"roadnetFile": "roadnet.json", 
 	"flowFile": "flow.json", 
 	"rlTrafficLight": true,

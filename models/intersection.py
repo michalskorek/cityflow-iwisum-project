@@ -4,6 +4,7 @@ from models.traffic_light import TrafficLight
 from models.point import Point
 from typing import List
 
+
 @dataclass
 class Intersection:
     id: str
