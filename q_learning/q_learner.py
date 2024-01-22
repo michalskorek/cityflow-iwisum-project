@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import numpy as np
 from tqdm import tqdm
 
@@ -6,19 +7,81 @@ from collections import defaultdict
 from environment.cityflow_env import CityFlowEnv
 
 
+@dataclass
+class LearningParams:
+    alpha: float
+    gamma: float
+    start_epsilon: float
+    epsilon_min: float
+    epsilon_decay_rate: float
+    bin_count: int
+
+    def to_list(self):
+        return [
+            self.alpha,
+            self.gamma,
+            self.start_epsilon,
+            self.epsilon_min,
+            self.epsilon_decay_rate,
+            self.bin_count,
+        ]
+
+    @staticmethod
+    def from_list(param_list):
+        (
+            alpha,
+            gamma,
+            start_epsilon,
+            epsilon_min,
+            epsilon_decay_rate,
+            bin_count,
+        ) = param_list
+        return LearningParams(
+            alpha=alpha,
+            gamma=gamma,
+            start_epsilon=start_epsilon,
+            epsilon_min=epsilon_min,
+            epsilon_decay_rate=epsilon_decay_rate,
+            bin_count=bin_count,
+        )
+
+    @staticmethod
+    def get_types():
+        return ["float", "float", "float", "float", "float", "int"]
+    
+    @staticmethod
+    def get_value_space() -> dict:
+        lohi = [("alpha", (0, 1)), ("gamma", (0, 1)), ("start_epsilon", (0, 1)),("epsilon_min", (0, 1)), ("epsilon_decay_rate", (0, 1))]
+
+        value_space = {key: {"low": lo, "high": hi} for (key, (lo, hi)) in lohi}
+        value_space["bin_count"] = list(range(18))
+
+        return value_space
+    
+    @staticmethod
+    def random():
+        params = dict()
+
+        for key, value in LearningParams.get_value_space().items():
+            if isinstance(value, dict):
+                params[key] = np.random.uniform(low=value["low"], high=value["high"])
+            elif isinstance(value, list):
+                params[key] = np.random.choice(value)
+            
+        return LearningParams(**params)
+
 class QLearner:
-    def __init__(self, roadnet, config, alpha, gamma, start_epsilon, bin_count, random_steps_number, epsilon_min, epsilon_decay_rate):
+    def __init__(self, roadnet, config, params, random_steps_number):
         self.roadnet = roadnet
         self.config = config
 
-        self.alpha = alpha
-        self.gamma = gamma
-        self.start_epsilon = start_epsilon
-        self.epsilon_min = epsilon_min
-        self.epsilon_decay_rate = epsilon_decay_rate
-        self.bin_count = bin_count
-        self.bins = np.logspace(0, np.log2(36), bin_count + 1, base=2.0)[:-1]
-
+        self.alpha = params.alpha
+        self.gamma = params.gamma
+        self.start_epsilon = params.start_epsilon
+        self.epsilon_min = params.epsilon_min
+        self.epsilon_decay_rate = params.epsilon_decay_rate
+        self.bin_count = params.bin_count
+        self.bins = np.logspace(0, np.log2(36), params.bin_count, base=2.0)[:-1]
 
         self.max_steps = 500
         self.attempt_no = 1
@@ -29,9 +92,10 @@ class QLearner:
         self.action_space = self.environment.get_possible_actions(0)
         self.q = defaultdict(lambda: np.array(self.action_space))
         self.steps = []
-        
+
     def __str__(self):
         return f"QLearner_alpha_{self.alpha}_gamma_{self.gamma}_bin_count_{self.bin_count}_random_steps_number_{self.random_steps_number}_epsilon_min_{self.epsilon_min}_epsilon_decay_rate_{self.epsilon_decay_rate}"
+
     def learn(self, steps, progress=False):
         for i in tqdm(range(steps), disable=not progress):
             avg_reward = self.attempt(i)
@@ -98,5 +162,5 @@ class QLearner:
         self.environment = CityFlowEnv(self.roadnet, self.config)
 
     def _exponential_decay_epsilon(self, current_step):
-        epsilon = self.start_epsilon * (self.epsilon_decay_rate ** current_step)
+        epsilon = self.start_epsilon * (self.epsilon_decay_rate**current_step)
         return max(epsilon, self.epsilon_min)

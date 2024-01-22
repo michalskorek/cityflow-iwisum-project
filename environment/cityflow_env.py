@@ -38,22 +38,28 @@ class CityFlowEnv:
     def build_lane_phase_dict(self) -> dict:
         lane_phase_dict = defaultdict(set)
         for i, intersection in enumerate(self.intersections):
-            for j, lightPhase in enumerate(intersection.trafficLight['lightphases']):
-                for k, availableRoadLink in enumerate(lightPhase['availableRoadLinks']):
+            for j, lightPhase in enumerate(intersection.trafficLight["lightphases"]):
+                for k, availableRoadLink in enumerate(lightPhase["availableRoadLinks"]):
                     roadLink = intersection.roadLinks[availableRoadLink]
-                    startRoadId = roadLink['startRoad']
+                    startRoadId = roadLink["startRoad"]
                     for l, road in enumerate(intersection.roads):
                         if road.id == startRoadId:
                             startRoadIndex = l
                             break
-                    for l, laneLink in enumerate(roadLink['laneLinks']):
-                        lane_phase_dict[(i, startRoadIndex, laneLink['startLaneIndex'])].add(j)
+                    for l, laneLink in enumerate(roadLink["laneLinks"]):
+                        lane_phase_dict[
+                            (i, startRoadIndex, laneLink["startLaneIndex"])
+                        ].add(j)
         return lane_phase_dict
+
     def random_step(self):
         for i, intersection in enumerate(self.intersections):
             possible_actions = self.get_possible_actions(i)
-            self.cityflow_engine.set_tl_phase(intersection.id, np.random.choice(possible_actions))
+            self.cityflow_engine.set_tl_phase(
+                intersection.id, np.random.choice(possible_actions)
+            )
         self.cityflow_engine.next_step()
+
     def step(self, actions):
         for intersection, phase_id in zip(self.intersections, actions):
             self.cityflow_engine.set_tl_phase(intersection.id, phase_id)
@@ -68,18 +74,23 @@ class CityFlowEnv:
 
     def get_states(self):
         lane_waiting_vehicles = self.cityflow_engine.get_lane_waiting_vehicle_count()
-        state = np.array([np.zeros(len(intersection.trafficLight['lightphases'])) for intersection in self.intersections])
+        state = np.array(
+            [
+                np.zeros(len(intersection.trafficLight["lightphases"]))
+                for intersection in self.intersections
+            ]
+        )
         for i, intersection in enumerate(self.intersections):
-            intersection_phases_number = len(intersection.trafficLight['lightphases'])
+            intersection_phases_number = len(intersection.trafficLight["lightphases"])
             for j, road in enumerate(intersection.roads):
                 for k, lane in enumerate(lane_waiting_vehicles):
-                    phases = self.lane_phase_dict[(i,j,k)]
+                    phases = self.lane_phase_dict[(i, j, k)]
                     if len(phases) == intersection_phases_number:
                         continue
                     for phase in phases:
                         state[i][phase] += lane_waiting_vehicles[lane]
         return state
-    
+
     def get_possible_actions(self, intersection_index: int):
         return list(
             range(
@@ -89,7 +100,7 @@ class CityFlowEnv:
 
     def get_reward(self, new_lane_waiting_vehicles) -> List[int]:
         rewards = [
-            - np.sum(
+            -np.sum(
                 new_lane_waiting_vehicles[lane.id]
                 for road in intersection.roads
                 for lane in road.lanes
