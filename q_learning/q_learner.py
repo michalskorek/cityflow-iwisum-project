@@ -1,3 +1,4 @@
+import dataclasses
 from dataclasses import dataclass
 import numpy as np
 from tqdm import tqdm
@@ -47,17 +48,23 @@ class LearningParams:
 
     @staticmethod
     def get_types():
-        return ["float", "float", "float", "float", "float", "int"]
-    
+        return [f.type for f in dataclasses.fields(LearningParams)]
+
     @staticmethod
     def get_value_space() -> dict:
-        lohi = [("alpha", (0, 1)), ("gamma", (0, 1)), ("start_epsilon", (0, 1)),("epsilon_min", (0, 1)), ("epsilon_decay_rate", (0, 1))]
+        lohi = [
+            ("alpha", (0, 1)),
+            ("gamma", (0, 1)),
+            ("start_epsilon", (0, 1)),
+            ("epsilon_min", (0, 1)),
+            ("epsilon_decay_rate", (0, 1)),
+        ]
 
         value_space = {key: {"low": lo, "high": hi} for (key, (lo, hi)) in lohi}
         value_space["bin_count"] = list(range(18))
 
         return value_space
-    
+
     @staticmethod
     def random():
         params = dict()
@@ -67,8 +74,9 @@ class LearningParams:
                 params[key] = np.random.uniform(low=value["low"], high=value["high"])
             elif isinstance(value, list):
                 params[key] = np.random.choice(value)
-            
+
         return LearningParams(**params)
+
 
 class QLearner:
     def __init__(self, roadnet, config, params, random_steps_number):
