@@ -66,8 +66,11 @@ class CityFlowEnv:
         new_lane_waiting_vehicles = (
             self.cityflow_engine.get_lane_waiting_vehicle_count()
         )
+        get_lane_vehicle_count = (
+            self.cityflow_engine.get_lane_vehicle_count()
+        )
 
-        reward = self.get_reward(new_lane_waiting_vehicles)
+        reward = self.get_reward(new_lane_waiting_vehicles, get_lane_vehicle_count)
         self.last_lane_waiting_vehicles = new_lane_waiting_vehicles
         return reward
 
@@ -97,10 +100,10 @@ class CityFlowEnv:
             )
         )
 
-    def get_reward(self, new_lane_waiting_vehicles) -> List[int]:
+    def get_reward(self, new_lane_waiting_vehicles, new_lane_vehicles) -> List[int]:
         rewards = [
-            -np.sum(
-                new_lane_waiting_vehicles[lane.id]
+            np.sum(
+                new_lane_vehicles[lane.id] - new_lane_waiting_vehicles[lane.id]
                 for road in intersection.roads
                 for lane in road.lanes
             )
