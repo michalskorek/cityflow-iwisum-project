@@ -98,7 +98,7 @@ class QLearner:
         self._reset_env()
         self.random_steps_number = random_steps_number
         self.action_space = self.environment.get_possible_actions(0)
-        self.q = defaultdict(lambda: np.array(self.action_space))
+        self.q = defaultdict(lambda: np.array([float("-Inf") for _ in self.action_space]))
         self.steps = []
 
     def __str__(self):
