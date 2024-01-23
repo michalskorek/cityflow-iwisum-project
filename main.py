@@ -1,4 +1,3 @@
-import ast
 import pandas as pd
 
 from config import Config
@@ -14,9 +13,10 @@ def load_n_best_solutions(filename, n):
     params = []
     n_best = dataframe.sort_values(by="fitness", ascending=False).head(n)
     for solution in n_best.iterrows():
-        params.append(LearningParams.from_list(list(solution[1][1: -1])))
+        params.append(LearningParams.from_list(list(solution[1][1:-1])))
 
     return params
+
 
 if __name__ == "__main__":
     config = Config()
@@ -29,14 +29,14 @@ if __name__ == "__main__":
     initial_population = load_n_best_solutions(filename, take_n_best_from_file)
 
     optimizer_params = OptimizerParams(
-        simulation_steps=5000,
+        simulation_steps=1,
         fitness_calculation_last_n_steps=150,
         simulation_repetitions=4,
         number_generations=8,
         solutions_per_population=16,
         random_mutation_val=0.05,
         keep_parents=2,
-        initial_population=initial_population
+        initial_population=initial_population,
     )
 
     optimiser = GeneticOptimizer(
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         qlearner_params={
             "config": config,
             "roadnet": roadnet,
-            "random_steps_number": 100,
+            "random_steps_number": 1,
         },
     )
 

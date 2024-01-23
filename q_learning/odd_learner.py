@@ -22,7 +22,7 @@ class OddLearner:
         self._reset_env()
         self.random_steps_number = random_steps_number
         self.action_space = self.environment.get_possible_actions(0)
-        self.q = defaultdict(lambda: np.array(self.action_space))
+        self.q = defaultdict(lambda: np.zeros(len(self.action_space)))
         self.steps = []
 
     def __str__(self):
@@ -62,7 +62,8 @@ class OddLearner:
 
     def _terminate(self):
         full_lane_length = 36
-        return np.any(obs == full_lane_length for obs in self._get_state_vector())
+        state_vector = self._get_state_vector()
+        return np.any(state_vector == full_lane_length)
 
     def _reset_env(self):
         self.environment = CityFlowEnv(self.roadnet, self.config)
