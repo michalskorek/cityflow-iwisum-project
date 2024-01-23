@@ -24,6 +24,8 @@ class OptimizerParams:
 
     output_dir: str = "output"
 
+    initial_population: list = None
+
     # PyGAD GA params
 
     keep_parents: int = 1
@@ -54,10 +56,13 @@ class GeneticOptimizer(pygad.GA):
         }
         self.start_time = None
 
-        initial_population = [
-            LearningParams.random().to_list()
+        initial_population = params.initial_population if params.initial_population else []
+        initial_population += [
+            LearningParams.random()
             for _ in range(params.solutions_per_population)
         ]
+        initial_population = initial_population[:params.solutions_per_population]
+        initial_population = [p.to_list() for p in initial_population]
 
         super().__init__(
             num_generations=params.number_generations,
