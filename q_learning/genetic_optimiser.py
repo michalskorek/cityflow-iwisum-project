@@ -1,15 +1,18 @@
 from dataclasses import dataclass
 import dataclasses
-import multiprocessing
+import datetime
 import os
 import time
 import uuid
-import numpy as np
 import pandas as pd
 import pygad
+import warnings
 
 from os.path import isfile, join
 from q_learning.q_learner import LearningParams, QLearner
+
+
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
 
 
 @dataclass
@@ -19,20 +22,19 @@ class OptimizerParams:
 
     simulation_repetitions: int
 
-    output_dir = "output"
+    output_dir: str = "output"
 
     # PyGAD GA params
 
-    keep_parents = 2
-    solutions_per_population = 32
+    keep_parents: int = 1
+    solutions_per_population: int = 32
     number_generations: int = 3
-    num_parents_mating = 10
+    num_parents_mating: int = 10
 
-    random_mutation_min_val = 0.0
-    random_mutation_max_val = 0.05
-    mutation_percent_genes = 30
+    random_mutation_val: int = 0.05
+    mutation_num_genes: int = 1
 
-    parallel_processes = 16
+    parallel_processes: int = 16
 
 
 class GeneticOptimizer(pygad.GA):
@@ -40,14 +42,17 @@ class GeneticOptimizer(pygad.GA):
         self.optimizer_params = params
         self.qlearner_params = qlearner_params
 
-        self.uuid = str(uuid.uuid4())[:5]
+        start_date = datetime.datetime.now().strftime("%m_%d_%H_%M_%S")
 
         self.output_dir = params.output_dir
-        self.output_path = (
-            f"{params.output_dir}/genetic_optimizer_results_{self.uuid}.hdf5"
-        )
+        self.output_path = f"{params.output_dir}/ga_results_{start_date}.hdf5"
 
         self._init_output_file()
+        self.metadata = {
+            "optimizer_params": self.optimizer_params,
+            "random_steps_number": self.qlearner_params["random_steps_number"],
+        }
+        self.start_time = None
 
         initial_population = [
             LearningParams.random().to_list()
@@ -66,17 +71,22 @@ class GeneticOptimizer(pygad.GA):
             crossover_type="uniform",
             keep_parents=params.keep_parents,
             mutation_type="random",
-            random_mutation_min_val=params.random_mutation_min_val,
-            random_mutation_max_val=params.random_mutation_max_val,
-            mutation_percent_genes=params.mutation_percent_genes,
+            mutation_num_genes=params.mutation_num_genes,
+            random_mutation_min_val=params.random_mutation_val * -1,
+            random_mutation_max_val=params.random_mutation_val,
             parallel_processing=["process", params.parallel_processes],
-            on_fitness=self.on_generation
+            on_generation=GeneticOptimizer.on_generation,
         )
+
+    def run(self):
+        self.start_time = time.time()
+        super().run()
 
     @staticmethod
     def _fitness_function(self, solution, solution_idx):
         params = LearningParams.from_list(solution)
 
+        all_rewards = []
         fitnesses = []
 
         for _ in range(self.optimizer_params.simulation_repetitions):
@@ -84,14 +94,14 @@ class GeneticOptimizer(pygad.GA):
             learner.learn(self.optimizer_params.simulation_steps)
             rewards = learner.avg_rewards
 
+            all_rewards.append(rewards)
             fitnesses.append(self._calculate_fitness(rewards))
 
         fitness = sum(fitnesses) / len(fitnesses)
+        all_rewards_avg = [sum(r) / len(r) for r in zip(*all_rewards)]
 
-        df = pd.DataFrame(
-            columns=["Fitness"] + [f.name for f in dataclasses.fields(LearningParams)]
-        )
-        df.loc[0] = [fitness] + params.to_list()
+        df = pd.DataFrame(columns=GeneticOptimizer._get_columns())
+        df.loc[0] = [fitness] + params.to_list() + [all_rewards_avg]
         df.to_csv(f"output/tmp_{str(uuid.uuid4())[:12]}.csv")
 
         return fitness
@@ -101,17 +111,13 @@ class GeneticOptimizer(pygad.GA):
         return sum(rewards[-n_steps:]) / n_steps
 
     def _init_output_file(self):
-        columns = ["Fitness"] + [f.name for f in dataclasses.fields(LearningParams)]
-        dataframe = pd.DataFrame(columns=columns)
+        if os.path.exists(self.output_path):
+            return
 
-        metadata = {
-            "optimizer_params": self.optimizer_params,
-            "random_steps_number": self.qlearner_params["random_steps_number"],
-        }
+        dataframe = pd.DataFrame(columns=GeneticOptimizer._get_columns())
 
         with pd.HDFStore(self.output_path) as store:
             store.put("dataframe", dataframe)
-            store.get_storer("dataframe").attrs.metadata = metadata
 
     def _update_results(self):
         partial_files = [
@@ -132,13 +138,23 @@ class GeneticOptimizer(pygad.GA):
 
             os.remove(path)
 
-        with pd.HDFStore(self.output_path) as storedata:
-            storedata.put("dataframe", dataframe)
+        with pd.HDFStore(self.output_path) as store:
+            store.put("dataframe", dataframe)
+            store.get_storer("dataframe").attrs.metadata = self.metadata
 
+    @staticmethod
+    def _get_columns():
+        return (
+            ["fitness"]
+            + [f.name for f in dataclasses.fields(LearningParams)]
+            + ["all_rewards"]
+        )
+
+    @staticmethod
     def on_generation(self):
-        print("on generation")
-
-        try:
-            self._update_results()
-        except:
-            RuntimeError("asdf")
+        generation_duration = time.time() - self.start_time
+        self.start_time = time.time()
+        print(
+            f"Generation {self.generations_completed} done in {generation_duration:.2f}s"
+        )
+        self._update_results()

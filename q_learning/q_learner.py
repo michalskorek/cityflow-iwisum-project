@@ -53,15 +53,15 @@ class LearningParams:
     @staticmethod
     def get_value_space() -> dict:
         lohi = [
-            ("alpha", (0, 1)),
+            ("alpha", (0, 0.5)),
             ("gamma", (0, 1)),
             ("start_epsilon", (0, 1)),
-            ("epsilon_min", (0, 1)),
-            ("epsilon_decay_rate", (0, 1)),
+            ("epsilon_min", (0, 0.15)),
+            ("epsilon_decay_rate", (0.9, 1)),
         ]
 
         value_space = {key: {"low": lo, "high": hi} for (key, (lo, hi)) in lohi}
-        value_space["bin_count"] = list(range(18))
+        value_space["bin_count"] = list(range(1, 19))
 
         return value_space
 

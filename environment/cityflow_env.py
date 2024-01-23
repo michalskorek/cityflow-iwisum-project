@@ -2,7 +2,6 @@ from collections import defaultdict
 from typing import List
 from config import Config
 from models.extended_models.intersection_extended import IntersectionExtended
-from models.road import Road
 from models.roadnet import Roadnet
 import numpy as np
 import cityflow
