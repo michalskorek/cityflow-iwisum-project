@@ -4,8 +4,6 @@ from models.road import Road
 import json
 from typing import List
 
-from models.road_link import RoadLink
-
 
 @dataclass
 class Roadnet:
