@@ -66,9 +66,7 @@ class CityFlowEnv:
         new_lane_waiting_vehicles = (
             self.cityflow_engine.get_lane_waiting_vehicle_count()
         )
-        get_lane_vehicle_count = (
-            self.cityflow_engine.get_lane_vehicle_count()
-        )
+        get_lane_vehicle_count = self.cityflow_engine.get_lane_vehicle_count()
 
         reward = self.get_reward(new_lane_waiting_vehicles, get_lane_vehicle_count)
         self.last_lane_waiting_vehicles = new_lane_waiting_vehicles
