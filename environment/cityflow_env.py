@@ -100,8 +100,8 @@ class CityFlowEnv:
 
     def get_reward(self, new_lane_waiting_vehicles, new_lane_vehicles) -> List[int]:
         rewards = [
-            np.sum(
-                new_lane_vehicles[lane.id] - new_lane_waiting_vehicles[lane.id]
+            50 - np.sum(
+                new_lane_waiting_vehicles[lane.id]
                 for road in intersection.roads
                 for lane in road.lanes
             )

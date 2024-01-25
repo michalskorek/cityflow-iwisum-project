@@ -24,18 +24,21 @@ if __name__ == "__main__":
         roadnetJson = roadnetFile.read()
         roadnet = Roadnet.from_json(roadnetJson)
 
-    filename = "output/ga_results_01_23_01_50_13.hdf5"
-    take_n_best_from_file = 8
+    filename = "output/ga_results_01_24_07_08_47.hdf5"
+    take_n_best_from_file = 5
     initial_population = load_n_best_solutions(filename, take_n_best_from_file)
 
+    solutions_per_population = 12
+
     optimizer_params = OptimizerParams(
-        simulation_steps=1,
-        fitness_calculation_last_n_steps=150,
-        simulation_repetitions=4,
-        number_generations=8,
-        solutions_per_population=16,
+        simulation_steps=1000,
+        fitness_calculation_last_n_steps=200,
+        simulation_repetitions=2,
+        number_generations=2,
+        solutions_per_population=solutions_per_population,
         random_mutation_val=0.05,
         keep_parents=2,
+        num_parents_mating=solutions_per_population // 2.25,
         initial_population=initial_population,
     )
 
@@ -44,7 +47,7 @@ if __name__ == "__main__":
         qlearner_params={
             "config": config,
             "roadnet": roadnet,
-            "random_steps_number": 1,
+            "random_steps_number": 0,
         },
     )
 

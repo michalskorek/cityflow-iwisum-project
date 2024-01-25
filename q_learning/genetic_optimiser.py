@@ -81,7 +81,8 @@ class GeneticOptimizer(pygad.GA):
             random_mutation_min_val=params.random_mutation_val * -1,
             random_mutation_max_val=params.random_mutation_val,
             parallel_processing=["process", params.parallel_processes],
-            on_generation=GeneticOptimizer.on_generation,
+            on_fitness=GeneticOptimizer.on_fitness,
+            on_generation=GeneticOptimizer.on_generation
         )
 
     def run(self):
@@ -157,10 +158,14 @@ class GeneticOptimizer(pygad.GA):
         )
 
     @staticmethod
-    def on_generation(self):
+    def on_fitness(self, _population_fitness):
         generation_duration = time.time() - self.start_time
         self.start_time = time.time()
         print(
             f"Generation {self.generations_completed} done in {generation_duration:.2f}s"
         )
+
+    @staticmethod
+    def on_generation(self):
         self._update_results()
+
